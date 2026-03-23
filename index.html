@@ -479,7 +479,7 @@
         <table>
           <tr><th>Component</th><th>Details</th></tr>
           <tr><td><strong>Claude desktop app</strong></td><td>Mac mini (primary) + Windows 11</td></tr>
-          <tr><td><strong>Proxmox server</strong></td><td><code>root@192.168.68.2</code></td></tr>
+          <tr><td><strong>Proxmox server</strong></td><td><code>root@&lt;proxmox-server-ip&gt;</code></td></tr>
           <tr><td><strong>Remote working directory</strong></td><td><code>/tank/proxmox-data/code/nero</code> (NFS dataset on Proxmox)</td></tr>
           <tr><td><strong>Claude Code CLI version</strong></td><td>v2.1.81 — installed on both local machines and Proxmox</td></tr>
           <tr><td><strong>Node.js on Proxmox</strong></td><td>v24.14.0 via nvm — <code>/root/.nvm/versions/node/v24.14.0/bin</code></td></tr>
@@ -490,7 +490,7 @@
       <h3>How Claude Code desktop app works (SSH mode)</h3>
       <p>When you open a remote project via SSH, the desktop app does the following:</p>
       <ol>
-        <li>SSHs into the remote server (<code>root@192.168.68.2</code>)</li>
+        <li>SSHs into the remote server (<code>root@&lt;proxmox-server-ip&gt;</code>)</li>
         <li>Deploys its own agent binary to <code>/root/.claude/remote/ccd-cli</code> on the server</li>
         <li>Executes <code>ccd-cli</code> to start a Claude Code session in the remote working directory</li>
         <li>Communicates back to the desktop app over an RPC socket</li>
@@ -538,7 +538,7 @@
         <div class="tl-item fail">
           <div class="tl-label">Attempt 2 — Ruled out</div>
           <div class="tl-title">Checking Claude Code CLI directly on Proxmox</div>
-          <div class="tl-body">SSH'd into <code>root@192.168.68.2</code> and ran <code>claude</code> manually from terminal. Worked perfectly. Confirmed the CLI itself was not broken — the issue was specific to how the desktop app launched it.</div>
+          <div class="tl-body">SSH'd into <code>root@&lt;proxmox-server-ip&gt;</code> and ran <code>claude</code> manually from terminal. Worked perfectly. Confirmed the CLI itself was not broken — the issue was specific to how the desktop app launched it.</div>
         </div>
 
         <div class="tl-item info">
@@ -692,7 +692,7 @@ lsattr /root/.claude/remote/ccd-cli
       <div class="alert alert-yellow">
         <strong>Important — before future Claude updates</strong>
         If Anthropic releases a patched version of <code>ccd-cli</code> that no longer passes the bad flags, you must remove the immutable lock before the app can update the file:
-        <pre style="margin-top:10px;"><code>ssh root@192.168.68.2 "chattr -i /root/.claude/remote/ccd-cli"</code></pre>
+        <pre style="margin-top:10px;"><code>ssh root@&lt;proxmox-server-ip&gt; "chattr -i /root/.claude/remote/ccd-cli"</code></pre>
         Then reconnect the desktop app to let it redeploy. Verify the new binary doesn't pass the bad flags before removing the wrapper.
       </div>
     </div>
@@ -703,7 +703,7 @@ lsattr /root/.claude/remote/ccd-cli
     <div class="card">
       <h2><span class="icon">💾</span> Backup Locations</h2>
 
-      <h3>On Proxmox server (<code>root@192.168.68.2</code>)</h3>
+      <h3>On Proxmox server (<code>root@&lt;proxmox-server-ip&gt;</code>)</h3>
       <div class="table-wrap">
         <table>
           <tr><th>Path</th><th>Contents</th><th>Status</th></tr>
@@ -767,7 +767,7 @@ lsattr /root/.claude/remote/ccd-cli
           <div class="step-num">1</div>
           <div class="step-body">
             <strong>Check if the immutable flag is still set</strong>
-            <pre><code>ssh root@192.168.68.2 "lsattr /root/.claude/remote/ccd-cli"</code></pre>
+            <pre><code>ssh root@&lt;proxmox-server-ip&gt; "lsattr /root/.claude/remote/ccd-cli"</code></pre>
             <p>You should see <code>----i---------e-------</code>. If the <code>i</code> is missing, the flag was removed.</p>
           </div>
         </div>
@@ -775,14 +775,14 @@ lsattr /root/.claude/remote/ccd-cli
           <div class="step-num">2</div>
           <div class="step-body">
             <strong>Restore wrapper from backup</strong>
-            <pre><code>ssh root@192.168.68.2 "cp /root/.claude/remote/ccd-cli.working-backup /root/.claude/remote/ccd-cli && chmod +x /root/.claude/remote/ccd-cli && chattr +i /root/.claude/remote/ccd-cli"</code></pre>
+            <pre><code>ssh root@&lt;proxmox-server-ip&gt; "cp /root/.claude/remote/ccd-cli.working-backup /root/.claude/remote/ccd-cli && chmod +x /root/.claude/remote/ccd-cli && chattr +i /root/.claude/remote/ccd-cli"</code></pre>
           </div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-body">
             <strong>Verify the file looks correct</strong>
-            <pre><code>ssh root@192.168.68.2 "cat /root/.claude/remote/ccd-cli"</code></pre>
+            <pre><code>ssh root@&lt;proxmox-server-ip&gt; "cat /root/.claude/remote/ccd-cli"</code></pre>
             <p>Must start with <code>#!/bin/bash</code> — not a binary blob.</p>
           </div>
         </div>
@@ -799,7 +799,7 @@ lsattr /root/.claude/remote/ccd-cli
 
       <h3>Scenario B — Both Proxmox backups lost</h3>
       <p>If <code>ccd-cli.working-backup</code> is also gone, recreate the wrapper manually:</p>
-      <pre><span class="lang">bash</span><code>ssh root@192.168.68.2
+      <pre><span class="lang">bash</span><code>ssh root@&lt;proxmox-server-ip&gt;
 cat > /root/.claude/remote/ccd-cli << 'EOF'
 #!/bin/bash
 export PATH=/root/.nvm/versions/node/v24.14.0/bin:$PATH
@@ -843,7 +843,7 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
 
 <footer>
   <span>Claude Bug Fix Report &nbsp;|&nbsp; Generated 2026-03-23</span>
-  <span>Environment: Mac mini + Windows 11 + Proxmox 192.168.68.2</span>
+  <span>Environment: Mac mini + Windows 11 + Proxmox &lt;proxmox-server-ip&gt;</span>
 </footer>
 
 </body>
