@@ -435,6 +435,7 @@
   <a href="#backups">Backup Locations</a>
   <a href="#recovery">Recovery Guide</a>
   <a href="#notes">Notes & Caveats</a>
+  <a href="#updates">Update Log</a>
 </nav>
 
 <!-- MAIN -->
@@ -447,7 +448,7 @@
     <div class="meta">
       <span><strong>Date:</strong> 2026-03-23</span>
       <span><strong>Affected:</strong> Mac mini + Windows 11</span>
-      <span><strong>Status:</strong> <span class="badge badge-green">● Fully Resolved</span></span>
+      <span><strong>Status:</strong> <span class="badge badge-yellow">⚠ Workaround Active</span></span>
     </div>
   </div>
 
@@ -626,7 +627,7 @@
       </ul>
 
       <pre><span class="lang">bash</span><code>#!/bin/bash
-export PATH=/root/.nvm/versions/node/v24.14.0/bin:$PATH
+export PATH=/root/.nvm/versions/node/v24.14.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ARGS=()
 for arg in "$@"; do
     [[ "$arg" == "--dangerously-skip-permissions" ]] && continue
@@ -640,11 +641,10 @@ exec /root/.nvm/versions/node/v24.14.0/bin/node /root/.claude/remote/ccd-cli.js 
         <table>
           <tr><th>File</th><th>Role</th></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli</code></td><td><strong>Active wrapper</strong> — the fix. Marked immutable with <code>chattr +i</code>.</td></tr>
-          <tr><td><code>/root/.claude/remote/ccd-cli.js</code></td><td>Real Claude CLI Node.js script (v2.1.81)</td></tr>
-          <tr><td><code>/root/.claude/remote/ccd-cli-version</code></td><td>Version file — updated to <code>2.1.81</code></td></tr>
-          <tr><td><code>/root/.claude/remote/ccd-cli.bak</code></td><td>Original broken binary from Anthropic (v2.1.78)</td></tr>
-          <tr><td><code>/root/.claude/remote/ccd-cli.bak2</code></td><td>Second copy of original broken binary</td></tr>
+          <tr><td><code>/root/.claude/remote/ccd-cli.js</code></td><td>Real Claude CLI Node.js script — v2.1.81 JS bundle (12MB), deployed by app 1.1.8308</td></tr>
+          <tr><td><code>/root/.claude/remote/ccd-cli-version</code></td><td>Version file (shows 2.1.78 — cosmetic only, actual JS bundle is v2.1.81)</td></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli.working-backup</code></td><td>Backup copy of the working wrapper script</td></tr>
+          <tr><td><code>/root/.claude/remote/ccd-cli.wrapper-backup</code></td><td>Second backup of the wrapper script</td></tr>
         </table>
       </div>
 
@@ -718,14 +718,14 @@ lsattr /root/.claude/remote/ccd-cli
             <td><span class="badge badge-blue">Backup</span></td>
           </tr>
           <tr>
-            <td><code>/root/.claude/remote/ccd-cli.bak</code></td>
-            <td>Original broken binary (v2.1.78)</td>
-            <td><span class="badge badge-indigo">Archive</span></td>
+            <td><code>/root/.claude/remote/ccd-cli.wrapper-backup</code></td>
+            <td>Second backup copy of the working wrapper</td>
+            <td><span class="badge badge-blue">Backup</span></td>
           </tr>
           <tr>
-            <td><code>/root/.claude/remote/ccd-cli.bak2</code></td>
-            <td>Second copy of original broken binary</td>
-            <td><span class="badge badge-indigo">Archive</span></td>
+            <td><code>/root/.claude/remote/ccd-cli.js</code></td>
+            <td>v2.1.81 JS bundle deployed by app 1.1.8308</td>
+            <td><span class="badge badge-indigo">Runtime</span></td>
           </tr>
           <tr>
             <td><code>/root/.claude/projects/-tank-proxmox-data-code-nero/memory/project_claude_code_fix.md</code></td>
@@ -832,10 +832,40 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
       <ul>
         <li><strong>Git not installed on Proxmox</strong> — causes harmless <code>spawn git ENOENT</code> errors in Claude Code logs. Not related to this issue, safe to ignore.</li>
         <li><strong>This is a workaround, not a real fix</strong> — the root issue is Anthropic shipping a broken <code>ccd-cli</code> binary. A proper patch from Anthropic would make this unnecessary.</li>
-        <li><strong>Bug reported</strong> — filed at <code>https://github.com/anthropics/claude-code/issues</code></li>
+        <li><strong>v2.1.81 does NOT fix the root cause</strong> — tested on 2026-03-23 with app 1.1.8308. Plain passthrough (no flag stripping) failed on Mac mini M4. Wrapper still required.</li>
+        <li><strong>Bug reported</strong> — <a href="https://github.com/anthropics/claude-code/issues/37967" style="color:var(--indigo-lt)">github.com/anthropics/claude-code/issues/37967</a></li>
         <li><strong>Node version dependency</strong> — the wrapper hardcodes <code>/root/.nvm/versions/node/v24.14.0/bin</code>. If Node is updated via nvm, update the wrapper too.</li>
         <li><strong>Memory context</strong> — full fix context is also saved in Claude's memory system on both the Proxmox server and Windows, so future Claude sessions have this context automatically.</li>
       </ul>
+    </div>
+  </section>
+
+  <!-- UPDATE LOG -->
+  <section id="updates">
+    <div class="card">
+      <h2><span class="icon">🔄</span> Update Log</h2>
+
+      <div class="timeline">
+
+        <div class="tl-item success">
+          <div class="tl-label">2026-03-23 — App update 1.1.8308</div>
+          <div class="tl-title">New ccd-cli.js v2.1.81 deployed — format changed</div>
+          <div class="tl-body">Desktop app updated from 1.1.7714 to 1.1.8308. Deployed a new <code>ccd-cli.js</code> v2.1.81 in JS format (12MB) replacing the old 236MB self-contained binary. Immutable lock removed prior to update to allow the new file to be deployed.</div>
+        </div>
+
+        <div class="tl-item fail">
+          <div class="tl-label">2026-03-23 — Passthrough test</div>
+          <div class="tl-title">v2.1.81 does NOT fix the root cause</div>
+          <div class="tl-body">Replaced the flag-stripping wrapper with a plain passthrough to test whether v2.1.81 fixed the bad flags natively. Windows machines connected fine but Mac mini M4 failed. Flag stripping is still required.</div>
+        </div>
+
+        <div class="tl-item success">
+          <div class="tl-label">2026-03-23 — Wrapper restored</div>
+          <div class="tl-title">Flag-stripping wrapper reinstated with clean PATH</div>
+          <div class="tl-body">Restored the flag-stripping wrapper. Also cleaned up the PATH (removed inherited Windows PATH entries — only standard Linux paths + nvm node now). Re-applied <code>chattr +i</code>. All 3 machines confirmed working.</div>
+        </div>
+
+      </div>
     </div>
   </section>
 
