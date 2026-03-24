@@ -641,6 +641,7 @@ exec /root/.nvm/versions/node/v24.14.0/bin/node /root/.claude/remote/ccd-cli.js 
         <table>
           <tr><th>File</th><th>Role</th></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli</code></td><td><strong>Active wrapper</strong> — the fix. Marked immutable with <code>chattr +i</code>.</td></tr>
+          <tr><td><code>/root/.claude/remote/server</code></td><td>New Go binary RPC server (6.3MB) — deployed by app 1.1.8359. Replaces old SSH-direct launch; now acts as remote RPC handler and spawns <code>ccd-cli</code></td></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli.js</code></td><td>Real Claude CLI Node.js script — v2.1.81 JS bundle (12MB), deployed by app 1.1.8308</td></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli-version</code></td><td>Version file (shows 2.1.78 — cosmetic only, actual JS bundle is v2.1.81)</td></tr>
           <tr><td><code>/root/.claude/remote/ccd-cli.working-backup</code></td><td>Backup copy of the working wrapper script</td></tr>
@@ -833,6 +834,7 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
         <li><strong>Git not installed on Proxmox</strong> — causes harmless <code>spawn git ENOENT</code> errors in Claude Code logs. Not related to this issue, safe to ignore.</li>
         <li><strong>This is a workaround, not a real fix</strong> — the root issue is Anthropic shipping a broken <code>ccd-cli</code> binary. A proper patch from Anthropic would make this unnecessary.</li>
         <li><strong>v2.1.81 does NOT fix the root cause</strong> — tested on 2026-03-23 with app 1.1.8308. Plain passthrough (no flag stripping) failed on Mac mini M4. Wrapper still required.</li>
+        <li><strong>App 1.1.8359 still passes the flag</strong> — tested on 2026-03-23. New <code>server</code> Go binary deployed but <code>--allow-dangerously-skip-permissions</code> is still passed to <code>ccd-cli</code>. Confirmed via argument logging. Wrapper re-locked with <code>chattr +i</code>.</li>
         <li><strong>Bug reported</strong> — <a href="https://github.com/anthropics/claude-code/issues/37967" style="color:var(--indigo-lt)">github.com/anthropics/claude-code/issues/37967</a></li>
         <li><strong>Node version dependency</strong> — the wrapper hardcodes <code>/root/.nvm/versions/node/v24.14.0/bin</code>. If Node is updated via nvm, update the wrapper too.</li>
         <li><strong>Memory context</strong> — full fix context is also saved in Claude's memory system on both the Proxmox server and Windows, so future Claude sessions have this context automatically.</li>
@@ -863,6 +865,12 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
           <div class="tl-label">2026-03-23 — Wrapper restored</div>
           <div class="tl-title">Flag-stripping wrapper reinstated with clean PATH</div>
           <div class="tl-body">Restored the flag-stripping wrapper. Also cleaned up the PATH (removed inherited Windows PATH entries — only standard Linux paths + nvm node now). Re-applied <code>chattr +i</code>. All 3 machines confirmed working.</div>
+        </div>
+
+        <div class="tl-item fail">
+          <div class="tl-label">2026-03-23 — App update 1.1.8359</div>
+          <div class="tl-title">New Go server binary deployed — flag still being passed</div>
+          <div class="tl-body">Desktop app updated to 1.1.8359. Deployed a new Go binary <code>server</code> (6.3MB) as a remote RPC handler. The <code>server</code> binary now manages the session and spawns <code>ccd-cli</code>. However, <code>--allow-dangerously-skip-permissions</code> is still passed to <code>ccd-cli</code> — confirmed via argument logging. Root cause is not fixed. Immutable lock re-applied to wrapper.</div>
         </div>
 
       </div>
