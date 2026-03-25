@@ -448,6 +448,7 @@
     <div class="meta">
       <span><strong>Date:</strong> 2026-03-23</span>
       <span><strong>Affected:</strong> Mac mini + Windows 11</span>
+      <span><strong>Last tested:</strong> 2026-03-24 (app 1.1.8629)</span>
       <span><strong>Status:</strong> <span class="badge badge-yellow">⚠ Workaround Active</span></span>
     </div>
   </div>
@@ -632,9 +633,15 @@ ARGS=()
 for arg in "$@"; do
     [[ "$arg" == "--dangerously-skip-permissions" ]] && continue
     [[ "$arg" == "--allow-dangerously-skip-permissions" ]] && continue
+    [[ "$arg" == "bypassPermissions" ]] && ARGS+=("acceptEdits") && continue
     ARGS+=("$arg")
 done
 exec /root/.nvm/versions/node/v24.14.0/bin/node /root/.claude/remote/ccd-cli.js "${ARGS[@]}"</code></pre>
+
+      <div class="alert alert-yellow">
+        <strong>Updated 2026-03-24 — bypassPermissions fix added</strong>
+        App 1.1.8629 introduced a new flag: <code>--permission-mode bypassPermissions</code> on both Mac and Windows. This mode also triggers the root/sudo security check and causes Claude Code to exit immediately. The wrapper now replaces <code>bypassPermissions</code> with <code>acceptEdits</code>.
+      </div>
 
       <h3>Files involved on Proxmox server</h3>
       <div class="table-wrap">
@@ -808,6 +815,7 @@ ARGS=()
 for arg in "$@"; do
     [[ "$arg" == "--dangerously-skip-permissions" ]] && continue
     [[ "$arg" == "--allow-dangerously-skip-permissions" ]] && continue
+    [[ "$arg" == "bypassPermissions" ]] && ARGS+=("acceptEdits") && continue
     ARGS+=("$arg")
 done
 exec /root/.nvm/versions/node/v24.14.0/bin/node /root/.claude/remote/ccd-cli.js "${ARGS[@]}"
@@ -835,6 +843,7 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
         <li><strong>This is a workaround, not a real fix</strong> — the root issue is Anthropic shipping a broken <code>ccd-cli</code> binary. A proper patch from Anthropic would make this unnecessary.</li>
         <li><strong>v2.1.81 does NOT fix the root cause</strong> — tested on 2026-03-23 with app 1.1.8308. Plain passthrough (no flag stripping) failed on Mac mini M4. Wrapper still required.</li>
         <li><strong>App 1.1.8359 still passes the flag</strong> — tested on 2026-03-23. New <code>server</code> Go binary deployed but <code>--allow-dangerously-skip-permissions</code> is still passed to <code>ccd-cli</code>. Confirmed via argument logging. Wrapper re-locked with <code>chattr +i</code>.</li>
+        <li><strong>App 1.1.8629 still passes the flag + new issue</strong> — tested on 2026-03-24. NOT fixed. Additionally, <code>--permission-mode bypassPermissions</code> is now passed (on both Mac and Windows), which also triggers the root/sudo check and causes an immediate exit. Wrapper updated to replace <code>bypassPermissions</code> with <code>acceptEdits</code>. All 3 machines confirmed working with the updated wrapper.</li>
         <li><strong>Bug reported</strong> — <a href="https://github.com/anthropics/claude-code/issues/37967" style="color:var(--indigo-lt)">github.com/anthropics/claude-code/issues/37967</a></li>
         <li><strong>Node version dependency</strong> — the wrapper hardcodes <code>/root/.nvm/versions/node/v24.14.0/bin</code>. If Node is updated via nvm, update the wrapper too.</li>
         <li><strong>Memory context</strong> — full fix context is also saved in Claude's memory system on both the Proxmox server and Windows, so future Claude sessions have this context automatically.</li>
@@ -871,6 +880,19 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
           <div class="tl-label">2026-03-23 — App update 1.1.8359</div>
           <div class="tl-title">New Go server binary deployed — flag still being passed</div>
           <div class="tl-body">Desktop app updated to 1.1.8359. Deployed a new Go binary <code>server</code> (6.3MB) as a remote RPC handler. The <code>server</code> binary now manages the session and spawns <code>ccd-cli</code>. However, <code>--allow-dangerously-skip-permissions</code> is still passed to <code>ccd-cli</code> — confirmed via argument logging. Root cause is not fixed. Immutable lock re-applied to wrapper.</div>
+        </div>
+
+        <div class="tl-item fail">
+          <div class="tl-label">2026-03-24 — App update 1.1.8629</div>
+          <div class="tl-title">Still broken + new bypassPermissions issue on all platforms</div>
+          <div class="tl-body">
+            Desktop app updated to 1.1.8629 and tested on Mac mini M4 and Windows 11. <strong>Root cause is still not fixed.</strong> Two issues confirmed via argument logging:
+            <ul style="margin-top:8px;">
+              <li><code>--allow-dangerously-skip-permissions</code> is still passed (all platforms)</li>
+              <li><code>--permission-mode bypassPermissions</code> is now passed instead of <code>acceptEdits</code> on both Mac and Windows — this mode also triggers the root/sudo security check, causing immediate exit with code 1</li>
+            </ul>
+            Wrapper updated to additionally replace <code>bypassPermissions</code> with <code>acceptEdits</code>. All 3 machines (Mac mini M4 + 2× Windows 11) confirmed working. Immutable lock re-applied.
+          </div>
         </div>
 
       </div>
