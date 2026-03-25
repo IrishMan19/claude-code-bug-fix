@@ -895,6 +895,32 @@ Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart
           </div>
         </div>
 
+        <div class="tl-item info">
+          <div class="tl-label">2026-03-24 — GitHub issue comment posted</div>
+          <div class="tl-title">Comment posted on anthropics/claude-code#37967</div>
+          <div class="tl-body">
+            <p style="margin-bottom:10px;">Posted the following update to the Anthropic GitHub issue:</p>
+            <div class="alert alert-red" style="font-size:0.88rem;">
+              <strong>Update: Tested app 1.1.8629 (2026-03-24) — NOT fixed, new issue discovered</strong>
+              <p style="margin-top:8px;">App 1.1.8629 was tested on Mac mini M4 and Windows 11. Still broken.</p>
+              <p style="margin-top:8px;"><strong>Issue 1 (unchanged):</strong> <code>--allow-dangerously-skip-permissions</code> is still passed to <code>ccd-cli</code> when running as root.</p>
+              <p style="margin-top:8px;"><strong>Issue 2 (new in 1.1.8629, all platforms):</strong> <code>--permission-mode bypassPermissions</code> is now passed instead of <code>--permission-mode acceptEdits</code>. The <code>bypassPermissions</code> mode also triggers the root/sudo security check in <code>ccd-cli.js</code>, causing an immediate exit (93 bytes stderr: <em>--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons</em>).</p>
+              <p style="margin-top:8px;"><strong>Updated wrapper</strong> (strips bad flag AND replaces <code>bypassPermissions</code> → <code>acceptEdits</code>):</p>
+              <pre style="margin-top:8px;"><code>#!/bin/bash
+export PATH=/root/.nvm/versions/node/v24.14.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ARGS=()
+for arg in "$@"; do
+    [[ "$arg" == "--dangerously-skip-permissions" ]] && continue
+    [[ "$arg" == "--allow-dangerously-skip-permissions" ]] && continue
+    [[ "$arg" == "bypassPermissions" ]] && ARGS+=("acceptEdits") && continue
+    ARGS+=("$arg")
+done
+exec /root/.nvm/versions/node/v24.14.0/bin/node /root/.claude/remote/ccd-cli.js "${ARGS[@]}"</code></pre>
+              <p style="margin-top:8px;">All 3 machines (Mac mini M4 + 2× Windows 11) working with updated wrapper, locked with <code>chattr +i</code>.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
